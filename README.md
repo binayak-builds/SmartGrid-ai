@@ -1,12 +1,12 @@
 # SmartGrid+ (AI-Powered Electricity Bill Management System)
 
-SmartGrid+ is a modern, full-stack application built to simplify electricity bill management using automation and AI predictions.
+SmartGrid+ is an AI-powered electricity bill management system that tracks usage, predicts consumption, manages billing, and applies penalty logic for overdue payments with an interactive dashboard.
 
 ## Features
 - **Smart Authentication**: JWT based login via meter number.
 - **Admin Dashboard**: Generate bills seamlessly based on simulated unit input.
 - **User Dashboard**: Track 6-month usage trends and status tracking (paid/unpaid).
-- **AI-Prediction Modul**e: Predicts next-month usage and provides cost-reduction tips via Scikit-Learn logic.
+- **AI-Prediction Module**: Predicts next-month usage and provides cost-reduction tips via Scikit-Learn logic.
 - **Microservices**: Frontend (Next.js), Backend (Express + Prisma), AI (FastAPI).
 
 ---
