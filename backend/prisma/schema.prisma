@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Customer {
+  meter_no   String      @id
+  name       String
+  email      String      @unique
+  address    String
+  contact_no String
+  role       String      @default("USER") // USER or ADMIN
+  createdAt  DateTime    @default(now())
+  
+  login         Login?
+  meter_info    Meter_Info?
+  bills         Bill[]
+  usage_history Usage_History[]
+  payments      Payment[]
+}
+
+model Login {
+  meter_no String   @id
+  password String
+  customer Customer @relation(fields: [meter_no], references: [meter_no], onDelete: Cascade)
+}
+
+model Meter_Info {
+  meter_no     String   @id
+  meter_type   String   // Pre-paid, Post-paid
+  phase_code   String
+  bill_type    String   // Residential, Commercial
+  days         Int      @default(30)
+  customer     Customer @relation(fields: [meter_no], references: [meter_no], onDelete: Cascade)
+}
+
+model Bill {
+  bill_id          Int      @id @default(autoincrement())
+  meter_no         String
+  month            String
+  year             Int
+  units            Float
+  amount           Float
+  tax_amount       Float
+  penalty_amount   Float    @default(0)
+  total_amount     Float
+  amount_paid      Float    @default(0)
+  remaining_amount Float    @default(0)
+  status           String   @default("UNPAID") // UNPAID, PARTIAL, PAID, OVERDUE
+  dueDate          DateTime
+  createdAt        DateTime @default(now())
+  
+  customer     Customer @relation(fields: [meter_no], references: [meter_no], onDelete: Cascade)
+  payments     Payment[]
+}
+
+model Payment {
+  payment_id     Int      @id @default(autoincrement())
+  bill_id        Int
+  meter_no       String
+  amount         Float
+  payment_method String   @default("CREDIT_CARD")
+  payment_date   DateTime @default(now())
+  notes          String   @default("")
+  
+  bill           Bill     @relation(fields: [bill_id], references: [bill_id], onDelete: Cascade)
+  customer       Customer @relation(fields: [meter_no], references: [meter_no], onDelete: Cascade)
+}
+
+model Usage_History {
+  id           Int      @id @default(autoincrement())
+  meter_no     String
+  month        String
+  year         Int
+  units        Float
+  recorded_at  DateTime @default(now())
+  
+  customer     Customer @relation(fields: [meter_no], references: [meter_no], onDelete: Cascade)
+}
+
+model Tax {
+  tax_id      Int      @id @default(autoincrement())
+  tax_name    String
+  percentage  Float
+}
