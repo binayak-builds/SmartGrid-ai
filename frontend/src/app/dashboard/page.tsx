@@ -5,14 +5,64 @@ import {
     LayoutDashboard, FileText, LogOut, Zap, DownloadCloud, Activity,
     CheckCircle, AlertTriangle, Bell, X, TrendingUp, TrendingDown,
     DollarSign, Cpu, Users, BarChart2, Shield, Filter, Search, Eye,
-    CreditCard, History, Minus, Plus, Clock, ShieldCheck
+    CreditCard, Clock, ShieldCheck
 } from 'lucide-react';
 import Chart from '@/components/Chart';
 
 const API = 'http://127.0.0.1:5050';
 
+// ─── Interfaces ─────────────────────────────────────────────────────────────
+interface Bill {
+    bill_id: number;
+    meter_no: string;
+    month: string;
+    year: number;
+    units: number;
+    amount: number;
+    tax_amount: number;
+    penalty_amount: number;
+    total_amount: number;
+    remaining_amount: number;
+    amount_paid: number;
+    status: string;
+}
+
+interface User {
+    name: string | null;
+    meter_no: string | null;
+}
+
+interface AiData {
+    predicted_units: number;
+    anomaly_detected: boolean;
+    alert: string;
+    suggestion: string;
+}
+
+interface Outstanding {
+    unpaid_months: number;
+    total_due: number;
+    total_penalty: number;
+}
+
+interface Customer {
+    name: string;
+    meter_no: string;
+    email: string;
+    contact_no: string;
+    address: string;
+    meter_info?: {
+        meter_type: string;
+        bill_type: string;
+    };
+}
+
+interface OutstandingWithMeter extends Outstanding {
+    meter_no: string;
+}
+
 // ─── Bill Status Helper ─────────────────────────────────────────────────────
-function getBillStatus(bill: any, unpaidCount: number) {
+function getBillStatus(bill: Bill, unpaidCount: number) {
     if (bill.status === 'PAID') return { label: 'Paid', class: 'badge badge-paid', icon: <CheckCircle size={12} /> };
     if (bill.status === 'PARTIAL') return { label: 'Partial', class: 'badge badge-partial', icon: <CreditCard size={12} /> };
     if (bill.penalty_amount > 0) return { label: 'Penalized', class: 'badge badge-penalty', icon: <Shield size={12} /> };
@@ -22,7 +72,7 @@ function getBillStatus(bill: any, unpaidCount: number) {
 
 // ─── Bill Detail Modal (Digital Receipt Experience) ──────────────────────────
 function BillModal({ bill, onClose, onPay, onPayPartial }: {
-    bill: any; onClose: () => void;
+    bill: Bill; onClose: () => void;
     onPay: (id: number) => void;
     onPayPartial: (id: number, amount: number) => void;
 }) {
@@ -200,7 +250,7 @@ function BillModal({ bill, onClose, onPay, onPayPartial }: {
 }
 
 // ─── Notification Overlay (Premium Sliding Drawer) ──────────────────────────
-function NotifPanel({ bills, onClose }: { bills: any[]; onClose: () => void }) {
+function NotifPanel({ bills, onClose }: { bills: Bill[]; onClose: () => void }) {
     const unpaid = bills.filter(b => b.status === 'UNPAID' || b.status === 'OVERDUE');
     const penalized = bills.filter(b => b.penalty_amount > 0);
     const partial = bills.filter(b => b.status === 'PARTIAL');
@@ -296,32 +346,23 @@ function NotifPanel({ bills, onClose }: { bills: any[]; onClose: () => void }) {
 export default function Dashboard() {
     const router = useRouter();
     const [role, setRole] = useState<string | null>(null);
-    const [user, setUser] = useState<any>(null);
-    const [bills, setBills] = useState<any[]>([]);
-    const [aiData, setAiData] = useState<any>(null);
-    const [outstanding, setOutstanding] = useState<any>(null);
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [adminOutstanding, setAdminOutstanding] = useState<any[]>([]);
+    const [user, setUser] = useState<User | null>(null);
+    const [bills, setBills] = useState<Bill[]>([]);
+    const [aiData, setAiData] = useState<AiData | null>(null);
+    const [outstanding, setOutstanding] = useState<Outstanding | null>(null);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [adminOutstanding, setAdminOutstanding] = useState<OutstandingWithMeter[]>([]);
     const [loading, setLoading] = useState(true);
     const [backendError, setBackendError] = useState(false);
     const [seeding, setSeeding] = useState(false);
     const [currentView, setCurrentView] = useState('DASHBOARD');
-    const [selectedBill, setSelectedBill] = useState<any>(null);
+    const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
     const [showNotif, setShowNotif] = useState(false);
     const [filterStatus, setFilterStatus] = useState('ALL');
-    const [filterMonth, setFilterMonth] = useState('ALL');
+    const [filterMonth] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
-    const [simUnits, setSimUnits] = useState(150);
-    const [simPenalty, setSimPenalty] = useState(false);
     const [adminSimUnits, setAdminSimUnits] = useState<Record<string, number>>({});
     const [payingAll, setPayingAll] = useState(false);
-
-    const RATE = 5.0;
-    const TAX = 0.18;
-    const simBase = simUnits * RATE;
-    const simTax = simBase * TAX;
-    const simPenaltyAmt = simPenalty ? simBase * 0.10 : 0;
-    const simTotal = simBase + simTax + simPenaltyAmt;
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -347,7 +388,7 @@ export default function Dashboard() {
                         setBills(bData);
                         if (bData.length > 0) {
                             cUsage = bData[0].units || 120;
-                            hUsage = bData.length > 1 ? (bData.reduce((sum: number, bill: any) => sum + bill.units, 0) - cUsage) / (bData.length - 1) : cUsage;
+                            hUsage = bData.length > 1 ? (bData.reduce((sum: number, b: Bill) => sum + b.units, 0) - cUsage) / (bData.length - 1) : cUsage;
                         }
                     }
                     
@@ -430,9 +471,10 @@ export default function Dashboard() {
                 alert(data.error || 'The system could not process this installment.');
                 window.location.reload(); // Reload to sync state just in case
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Partial pay error:', err);
-            alert(`CRITICAL: Connection to financial gateway failed. [${err?.message || 'Unknown Network Error'}]`);
+            const msg = err instanceof Error ? err.message : 'Unknown Network Error';
+            alert(`CRITICAL: Connection to financial gateway failed. [${msg}]`);
         }
     };
 
@@ -465,9 +507,7 @@ export default function Dashboard() {
     // Computed
     const unpaidBills = bills.filter(b => b.status === 'UNPAID' || b.status === 'PARTIAL' || b.status === 'OVERDUE');
     const paidBills = bills.filter(b => b.status === 'PAID');
-    const partialBills = bills.filter(b => b.status === 'PARTIAL');
     const totalUnits = bills.reduce((s, b) => s + b.units, 0);
-    const totalAmountPaid = bills.reduce((s, b) => s + (b.amount_paid || 0), 0);
     const latestBill = bills[0];
     const notifCount = unpaidBills.length + bills.filter(b => b.penalty_amount > 0).length;
 
@@ -480,7 +520,7 @@ export default function Dashboard() {
     // Eco Score: 100 if avg <= 80, scales down as usage increases
     const ecoScore = Math.max(0, Math.min(100, Math.round(100 - ((avgUnits - 80) / 100) * 60)));
 
-    const months = Array.from(new Set(bills.map(b => b.month)));
+    // Removed unused months array from unique b.month
     const filteredBills = useMemo(() => bills.filter(b => {
         if (filterStatus !== 'ALL' && b.status !== filterStatus) return false;
         if (filterMonth !== 'ALL' && b.month !== filterMonth) return false;
@@ -488,7 +528,7 @@ export default function Dashboard() {
         return true;
     }), [bills, filterStatus, filterMonth, searchQuery]);
 
-    const navBtn = (view: string, icon: any, label: string, badge?: number) => (
+    const navBtn = (view: string, icon: React.ReactNode, label: string, badge?: number) => (
         <button onClick={() => setCurrentView(view)}
             className={`sidebar-item ${currentView === view ? 'active' : ''}`}>
             {icon}
@@ -679,14 +719,14 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className={`stat-card ${outstanding?.total_due > 0 ? 'stat-card-red' : 'stat-card-purple'} animate-fadeInLeft delay-300`}>
+                                <div className={`stat-card ${(outstanding?.total_due ?? 0) > 0 ? 'stat-card-red' : 'stat-card-purple'} animate-fadeInLeft delay-300`}>
                                     <div className={`w-12 h-12 rounded-xl border flex items-center justify-center
-                                        ${outstanding?.total_due > 0 ? 'bg-red-500/20 border-red-500/30 text-red-400 icon-glow-red' : 'bg-purple-500/20 border-purple-500/30 text-purple-400 icon-glow-purple'}`}>
-                                        {outstanding?.total_due > 0 ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
+                                        ${(outstanding?.total_due ?? 0) > 0 ? 'bg-red-500/20 border-red-500/30 text-red-400 icon-glow-red' : 'bg-purple-500/20 border-purple-500/30 text-purple-400 icon-glow-purple'}`}>
+                                        {(outstanding?.total_due ?? 0) > 0 ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
                                     </div>
                                     <div>
                                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Open Balance</p>
-                                        <div className={`flex items-end gap-2 font-bold ${outstanding?.total_due > 0 ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-slate-300'}`}>
+                                        <div className={`flex items-end gap-2 font-bold ${(outstanding?.total_due ?? 0) > 0 ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-slate-300'}`}>
                                             <span className="text-lg pb-0.5">₹</span><span className="text-3xl">{(outstanding?.total_due ?? 0).toFixed(2)}</span>
                                         </div>
                                     </div>
@@ -748,7 +788,7 @@ export default function Dashboard() {
                                             )}
                                             
                                             <div className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/5 rounded-xl border-l-2 border-l-blue-500">
-                                                <p className="text-xs text-slate-300 leading-relaxed max-w-[90%]">"{aiData.suggestion}"</p>
+                                                <p className="text-xs text-slate-300 leading-relaxed max-w-[90%]">&quot;{aiData.suggestion}&quot;</p>
                                             </div>
                                         </div>
                                     ) : (

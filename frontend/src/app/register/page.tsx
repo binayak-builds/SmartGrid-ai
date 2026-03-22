@@ -27,8 +27,8 @@ export default function Register() {
             if (!res.ok) throw new Error(data.error || `Registration failed`);
             setSuccess(true);
             setTimeout(() => router.push('/'), 1800);
-        } catch (err: any) {
-            setError(err.message || 'Could not connect to backend.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not connect to backend.');
         } finally {
             setLoading(false);
         }

@@ -46,8 +46,8 @@ export default function Home() {
             localStorage.setItem('meter_no', data.meter_no);
             localStorage.setItem('name',     data.name);
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.message || 'Could not connect to server.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not connect to server.');
         } finally { setLoading(false); }
     };
 

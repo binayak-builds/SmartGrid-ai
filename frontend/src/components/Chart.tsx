@@ -6,7 +6,12 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
 
-export default function UsageChart({ data }: { data?: any[] | null }) {
+interface MonthlyUsage {
+    month: string;
+    units: number;
+}
+
+export default function UsageChart({ data }: { data?: MonthlyUsage[] | null }) {
     ChartJS.defaults.color = '#64748b';
     ChartJS.defaults.font.family = 'Inter';
 
@@ -20,14 +25,14 @@ export default function UsageChart({ data }: { data?: any[] | null }) {
                 titleColor: '#fff',
                 titleFont: { family: 'Space Grotesk', weight: 'bold' as const, size: 14 },
                 bodyColor: '#60a5fa',
-                bodyFont: { family: 'Inter', weight: 600 as any, size: 13 },
+                bodyFont: { family: 'Inter', weight: 600, size: 13 },
                 borderColor: 'rgba(99, 162, 255, 0.25)',
                 borderWidth: 1,
                 padding: 14,
                 displayColors: false,
                 cornerRadius: 10,
                 caretSize: 6,
-                callbacks: { label: (ctx: any) => `⚡ ${ctx.raw} kWh` }
+                callbacks: { label: (ctx: { raw: unknown }) => `⚡ ${ctx.raw} kWh` }
             },
         },
         scales: {
@@ -71,7 +76,7 @@ export default function UsageChart({ data }: { data?: any[] | null }) {
             data: chartDataValues.slice(-6),
             borderColor: '#3b82f6',
             borderWidth: 3,
-            backgroundColor: (context: any) => {
+            backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D } }) => {
                 const ctx = context.chart.ctx;
                 const gradient = ctx.createLinearGradient(0, 0, 0, 400);
                 gradient.addColorStop(0, 'rgba(59,130,246,0.3)');
