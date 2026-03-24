@@ -7,15 +7,17 @@ from datetime import datetime
 
 app = FastAPI(title="SmartGrid+ AI Service")
 
-# Load models if they exist, otherwise train them first.
-if not os.path.exists('models/regressor.pkl'):
-    import model
-    model.train_and_save_model()
+from model import get_model_path, train_and_save_model
+model_dir = get_model_path()
 
-with open('models/regressor.pkl', 'rb') as f:
+# Load models if they exist, otherwise train them first.
+if not os.path.exists(os.path.join(model_dir, 'regressor.pkl')):
+    train_and_save_model()
+
+with open(os.path.join(model_dir, 'regressor.pkl'), 'rb') as f:
     regressor = pickle.load(f)
     
-with open('models/iso_forest.pkl', 'rb') as f:
+with open(os.path.join(model_dir, 'iso_forest.pkl'), 'rb') as f:
     iso_forest = pickle.load(f)
 
 class PredictRequest(BaseModel):

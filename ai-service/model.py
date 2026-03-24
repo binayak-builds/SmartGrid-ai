@@ -4,6 +4,12 @@ from sklearn.ensemble import RandomForestRegressor, IsolationForest
 import pickle
 import os
 
+def get_model_path():
+    # Vercel filesystem is read-only at runtime except for /tmp
+    if os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'):
+        return '/tmp/models'
+    return os.path.join(os.getcwd(), 'models')
+
 def train_and_save_model():
     # Simulate historical electricity usage data
     # Features: month (1-12), temperature (C), historical_usage (kWh)
@@ -39,14 +45,15 @@ def train_and_save_model():
     iso_forest.fit(df[['current_usage']])
     
     # Save the models
-    os.makedirs('models', exist_ok=True)
-    with open('models/regressor.pkl', 'wb') as f:
+    model_dir = get_model_path()
+    os.makedirs(model_dir, exist_ok=True)
+    with open(os.path.join(model_dir, 'regressor.pkl'), 'wb') as f:
         pickle.dump(regressor, f)
         
-    with open('models/iso_forest.pkl', 'wb') as f:
+    with open(os.path.join(model_dir, 'iso_forest.pkl'), 'wb') as f:
         pickle.dump(iso_forest, f)
         
-    print("Models trained and saved to 'models/' directory.")
+    print(f"Models trained and saved to '{model_dir}' directory.")
 
 if __name__ == "__main__":
     train_and_save_model()
