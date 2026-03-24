@@ -9,8 +9,17 @@ import { PrismaClient } from '@prisma/client';
 dotenv.config();
 
 const app = express();
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001'
+];
+if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -92,6 +101,10 @@ app.post('/api/dev/seed-user', async (req, res) => {
 });
 
 const PORT = Number(process.env.PORT) || 5050;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server started on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server started on port ${PORT}`);
+    });
+}
+
+export default app;

@@ -33,7 +33,8 @@ router.post('/generate', authenticate, async (req: AuthRequest, res) => {
 // AI Predict (must be before /:meter_no)
 router.post('/predict', authenticate, async (req: AuthRequest, res) => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/predict', {
+        const AI_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${AI_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(req.body)

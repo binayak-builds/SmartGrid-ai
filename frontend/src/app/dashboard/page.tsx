@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import Chart from '@/components/Chart';
 
-const API = 'http://127.0.0.1:5050';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050';
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
 interface Bill {

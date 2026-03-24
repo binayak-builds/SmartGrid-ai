@@ -34,7 +34,8 @@ export default function Home() {
         e.preventDefault();
         setLoading(true); setError('');
         try {
-            const res = await fetch('http://127.0.0.1:5050/api/auth/login', {
+            const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050';
+            const res = await fetch(`${API}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ meter_no: meter, password })

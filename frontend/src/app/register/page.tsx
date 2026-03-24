@@ -18,7 +18,8 @@ export default function Register() {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://127.0.0.1:5050/api/auth/register', {
+            const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050';
+            const res = await fetch(`${API}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
